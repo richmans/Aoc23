@@ -72,7 +72,7 @@ def solve2(i):
   dims, start, pipes = parse(i)
   w,h = dims
   x,y = start
-  loop = find_loop(start, pipes)
+  loop = set(find_loop(start, pipes))
   ds = find_entry(pipes, *start)
   pipes[(x,y,ds[0])] = ds[1]
   pipes[(x,y,ds[1])] = ds[0]
