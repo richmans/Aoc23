@@ -9,8 +9,9 @@ def solve(i):
 def solve2(i):
   return 0
   
-def test(fn, ex):
-  f = f"input/{tid:02}.test.txt"
+def test(fn, ex, f=None):
+  if f is None:
+    f = f"input/{tid:02}.test.txt"
   i = open(f).read()
   o = fn(i)
   if o != ex:
