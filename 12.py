@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from itertools import combinations
 from copy import copy
+import sys
 
 def dbg(*msg):
   if debug:
@@ -20,30 +21,37 @@ class Row:
     groups = [int(x) for x in groups.split(',')]
     return Row(springs, groups)  
 
-def walk(s, g, curg=None):
+def walk(s, g, curg=-1, memo={}):
   if s == '':
-    done = len(g) == 0 and curg in [None,0]
-    return done
-  #dbg(s,g,curg)
+    done = len(g) == 0 and curg < 1
+    return 1 if done else 0
+  memk = (s,','.join(map(str, g)),curg)
+  #dbg('enter', memk)
+  if memk in memo:
+    #dbg('hit', memk)
+    return memo[memk]
   c = s[0]
   x = s[1:]
   g = copy(g)
+  val = 0
   if c == '.':
-    if curg == 0:
-      curg = None
-    return walk(x, g, None) if curg is None else 0
+    val = walk(x, g, -1, memo) if curg < 1 else 0
   elif c == '#':
     if curg == 0:
       return 0
-    if curg is None:
+    elif curg < 0:
       if len(g) == 0:
         return 0
       curg = g.pop(0)
-    return walk(x, g, curg-1)
+    val = walk(x, g, curg-1,memo)
   else:
-    return walk('.'+x, g, curg) + walk('#'+x, g, curg)
+    val = walk('.'+x, g, curg, memo) + walk('#'+x, g, curg, memo)
+  if memk in memo and val != memo[memk]:
+    print('insomnia', s, val, memo[memk])
   
-  
+  memo[memk] = val
+  # dbg('res', memk, val)
+  return val
   
 def parse(i, p2):
   rows = []
