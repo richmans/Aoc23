@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from itertools import combinations
+from copy import copy
 
 def dbg(*msg):
   if debug:
@@ -9,57 +10,65 @@ def dbg(*msg):
 class Row:
   springs: int
   groups: list[int]
-  wildcards: list[int]
   
   @classmethod
   def parse(cls, l, p2):
-    s, groups = l.split()
+    springs, groups = l.split()
     if p2:
-      s = '?'.join([s]*5)
+      springs = '?'.join([springs]*5)
       groups = ','.join([groups]*5)
-    springs = sum([1<<i for i, b in enumerate(s) if b == '#'])
-    wildcards = [i for i,b in enumerate(s) if b == '?']
     groups = [int(x) for x in groups.split(',')]
-    return Row(springs, groups, wildcards)  
+    return Row(springs, groups)  
 
-def calc(s):
-  result = []
-  inside = False
-  while s > 0:
-    x = s & 1
-    s = s >> 1
-    if not inside and x == 1:
-      result.append(1)
-    elif inside and x == 1:
-      result[-1] += x
-    inside = x == 1
-  return result
-    
+def walk(s, g, curg=None):
+  if s == '':
+    done = len(g) == 0 and curg in [None,0]
+    return done
+  #dbg(s,g,curg)
+  c = s[0]
+  x = s[1:]
+  g = copy(g)
+  if c == '.':
+    if curg == 0:
+      curg = None
+    return walk(x, g, None) if curg is None else 0
+  elif c == '#':
+    if curg == 0:
+      return 0
+    if curg is None:
+      if len(g) == 0:
+        return 0
+      curg = g.pop(0)
+    return walk(x, g, curg-1)
+  else:
+    return walk('.'+x, g, curg) + walk('#'+x, g, curg)
+  
+  
+  
 def parse(i, p2):
   rows = []
   for l in i.strip().split('\n'):
     rows.append(Row.parse(l, p2))
   return rows
-
-def num_solutions(r):
-  # python 3.10+
-  present = int.bit_count(r.springs)
-  needed = sum(r.groups)
-  ones = needed - present
-  base = r.springs
-  result = 0
-  for i in combinations(r.wildcards, ones):
-    c = base | sum([1<<z for z in i])
-    result += 1 if calc(c) == r.groups else 0
-  return result
   
 def solve(i):
   rows = parse(i, False)
   dbg(rows)
-  return sum([num_solutions(r) for r in rows])
+  result = 0
+  for r in rows:
+    a = walk(r.springs, r.groups)
+    dbg('RESULT', a)
+    result += a
+  return result
 
 def solve2(i):
-  return 0
+  rows = parse(i, True)
+  result = 0
+  for r in rows:
+    a = walk(r.springs, r.groups)
+    dbg('RESULT', a)
+    result += a
+  return result
   
 def test(fn, ex, f=None):
   if f is None:
