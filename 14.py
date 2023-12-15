@@ -13,6 +13,8 @@ class Stone:
   type: int
   x: int
   y: int
+
+
   
 @dataclass
 class Row:
@@ -42,7 +44,11 @@ class Row:
   def weight(self):
     result = sum([self.length -s.x for s in self.stones if s.type == 2])
     return result
-        
+  
+  def key(self):
+    sums = [s.x + s.y * self.length for s in self.stones if s.type == 2]
+    return hash(tuple(sums))
+    
 @dataclass
 class Plate:
   rows: list[Row]
@@ -55,22 +61,23 @@ class Plate:
       result += r.paint() + '\n'
     return result
   
-  def rotate(self, ccw=True):
+  def rotate(self, ccw=False):
     height = self.width
     width = self.height
     dbg
     rows = [Row([], width) for _ in range(height)]
     for r in self.rows:
       for s in r.stones:
-        ns = copy(s)
+        x,y = s.x,s.y
+        s = copy(s)
         if ccw:
-          ns.x = s.y 
-          ns.y = height - s.x -1
-          rows[ns.y].stones.append( ns)
+          s.x = y 
+          s.y = height - x -1
+          rows[s.y].stones.append(s)
         else:
-          ns.x = width - s.y -1
-          ns.y = s.x
-          rows[ns.y].stones.insert(0, ns)
+          s.x = width - y -1
+          s.y = x
+          rows[s.y].stones.insert(0, s)
     return Plate(rows, height, width)
   
   def weight(self):
@@ -94,7 +101,10 @@ class Plate:
   def fall(self):
     for r in self.rows:
       r.fall()
-      
+  
+  def key(self):
+    return hash(tuple([r.key() for r in self.rows]))
+  
 def solve(i):
   p = Plate.parse(i, False)
   dbg(p.paint())
@@ -105,9 +115,33 @@ def solve(i):
   p = p.rotate(False)
   dbg(p.paint())
   return wt
+  
+def cycle(p):
+  for _ in range(4):
+    p.fall()
+    p = p.rotate(False)
+  return p
+  
+def find_period(p):
+  hashes = {p.key(): 0}
+  for i in range(10000):
+    p = cycle(p)
+    k = p.key()
+    if k in hashes:
+      period = i + 1 - hashes[k]
+      return i + 1, period, p
+    hashes[k] = i + 1
 
 def solve2(i):
-  return 0
+  iters = 1000000000
+  p = Plate.parse(i, False)
+  p = p.rotate(True)
+  
+  start, period, p = find_period(p)
+  remain = (iters - start) % period
+  for _ in range(remain):
+    p = cycle(p)
+  return p.weight()
   
 def test(fn, ex, f=None):
   if f is None:
@@ -128,7 +162,7 @@ debug = True
 tid = 14
  
 test(solve, 136)
-test(solve2, 2286)
+test(solve2, 64)
 
 debug = False
 
