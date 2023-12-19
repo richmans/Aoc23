@@ -53,8 +53,24 @@ class Field:
     if nx < 0 or ny < 0 or nx >= self.w or ny >= self.h:
       return None
     return Point(nx, ny)
-    
-def solve(i):
+
+def dirs(slen, sdir, part2):
+  r = []
+  #dbg(slen, sdir, part2)
+  for d in range(4):
+    if sdir == (d+2)%4:
+      continue # no backsies
+    if not part2 and d == sdir and slen == 3:
+      continue
+    elif part2 and d != sdir and slen < 4 and slen > 0:
+      continue
+    elif part2 and d == sdir and slen == 10:
+      continue
+    r.append(d)
+  #dbg(r)
+  return r
+      
+def solve(i, part2=False):
   f = Field.parse(i)
   q = PriorityQueue()
   dst = {}
@@ -64,18 +80,14 @@ def solve(i):
   q.put_nowait(p)
   while not q.empty():
     p = q.get_nowait()
+    dbg(p)
     if p.e == f.finish:
-      best = min(best, p.c)
+      if not part2 or p.slen > 4:
+        best = min(best, p.c)
       continue
-    for d in range(4):
-      nslen = 1
+    for d in dirs(p.slen, p.sdir, part2):
       nsdir = d
-      if p.sdir == (d+2)%4:
-        continue # no backsies
-      if p.sdir == d:
-        if p.slen == 3:
-          continue
-        nslen = p.slen +1
+      nslen = p.slen +1 if d==p.sdir else 1
       np = f.move(p.e, d)
       if np is None:
         continue
@@ -94,7 +106,7 @@ def solve(i):
   return best
 
 def solve2(i):
-  return 0
+  return solve(i, True)
   
 def test(fn, ex, f=None):
   if f is None:
@@ -115,7 +127,7 @@ debug = True
 tid = 17
 
 test(solve, 102)
-test(solve2, 2286)
+test(solve2, 94)
 
 debug = False
 
