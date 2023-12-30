@@ -4,43 +4,69 @@ def dbg(*msg):
   if debug:
     print(*msg)
 
+def get_inside(x, insides):
+  for i in insides:
+    if x >= i[0] and x <= i[1]:
+      return i
+  return None
+
+def consolidate(insides):
+  insides = sorted(insides)
+  i = 0
+  r = []
+  while i < len(insides):
+    x = insides[i]
+    i += 1
+    while i < len(insides) and x[1] == insides[i][0] -1:
+      i += 1
+      x[1] = insides[i][1]
+    r.append(x)
+  return r
+
 class Grid:
   def __init__(self):
     # in the beginning, there was darkness
-    self.t = {Point(0,0): (0,0,0)}
+    self.h = {}
+    self.tops = set()
     self.cur = Point(0,0)
     self.top = Point(0,0)
     self.bottom = Point(0,0)
     
-    
   def draw(self, ins):
     p = self.cur
-    for _ in range(ins.l):
-      p = p.move(ins.d)
-      self.t[p] = ins.c
-    self.top = self.top.min(p)
-    self.bottom = self.bottom.max(p)
-    self.cur = p
+    np = p.dig(ins)
+    if p.y == np.y:
+      start = min(p.x, np.x)
+      stop = max(p.x, np.x)
+      if p.y not in self.h:
+        self.h[p.y] = []
+      self.h[p.y].append((start, stop))
+    if p.x == np.x:
+      top = Point(p.x, min(p.y, np.y))
+      self.tops[top] = True
+    self.top = self.top.min(np)
+    self.bottom = self.bottom.max(np)
+    self.cur = np
   
   def measure(self):
     cnt = 0
-    for y in range(self.top.y, self.bottom.y + 1):
-      inside = False
-      up = down = False
-      for x in range(self.top.x, self.bottom.x + 1):
-        p = Point(x,y)
-        dug = p in self.t
-        if not dug:
-          up = down = False
+    last = 0
+    insides = []
+    levels = sorted(self.h.keys())
+    for y in levels:
+      drop = y - last
+      cnt += sum([(b-a+1)* drop for a,b in insides])
+      for l in self.h[y]:
+        i = get_inside(l, insides):
+        if i != None
+          bef = (i[0], l[0])
+          aft = (l[1], i[1])
+          insides.remove(i)
+          insides.append(bef)
+          insides.append(aft)
         else:
-          up |= Point(x,y-1) in self.t
-          down |= Point(x,y+1) in self.t
-        if up and down:
-          inside = not inside
-          up = down = False
-        dbg(p, inside)
-        if inside or dug:
-          cnt += 1
+          cnt += l[1] - l[0] -1
+          insides.append(l)
     return cnt
       
 @dataclass
@@ -56,11 +82,6 @@ class Point:
   
   def __hash__(self):
     return hash((self.x, self.y))
-  
-  def move(self, d):
-    x = self.x + d[0]
-    y = self.y + d[1]
-    return Point(x,y)
     
   def dig(self, i):
     x = self.x + i.d[0] * i.l
@@ -88,9 +109,10 @@ def solve(i):
   i = parse(i)
   dbg(i)
   g = Grid()
+  
   for ins in i:
     g.draw(ins)
-  
+  dbg(g.h)
   return g.measure()
 
 def solve2(i):
